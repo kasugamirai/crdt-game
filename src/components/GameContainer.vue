@@ -18,7 +18,7 @@
         <p>Player ID: {{ playerId }}</p>
         <p>Health: {{ playerHealth }}/100</p>
         <p>Score: {{ playerScore }}</p>
-        <p>Online Players: {{ Object.keys(players).length }}</p>
+        <p>Online Players: {{ onlinePlayerCount }}</p>
       </div>
       
       <div class="player-list">
@@ -56,6 +56,7 @@ export default {
     const playerHealth = ref(100)
     const playerScore = ref(0)
     const players = reactive({})
+    const onlinePlayerCount = ref(0)
     
     let yjsManager = null
     let gameEngine = null
@@ -80,7 +81,14 @@ export default {
         })
         
         yjsManager.onPlayersChange((newPlayers) => {
+          Object.keys(players).forEach(key => {
+            if (!(key in newPlayers)) {
+              delete players[key]
+            }
+          })
           Object.assign(players, newPlayers)
+          
+          onlinePlayerCount.value = yjsManager.getOnlinePlayerCount()
           
           const currentPlayer = players[playerId.value]
           if (currentPlayer) {
@@ -188,6 +196,7 @@ export default {
       playerHealth,
       playerScore,
       players,
+      onlinePlayerCount,
       handleKeyDown,
       handleKeyUp,
       getConnectionText

@@ -168,8 +168,8 @@ class GameEngine {
     const playerId = this.yjsManager.getClientId()
     
     this.bullets.forEach(bullet => {
-      Object.values(this.players).forEach(player => {
-        if (bullet.playerId === player.id || player.health <= 0) return
+      Object.entries(this.players).forEach(([playerKey, player]) => {
+        if (bullet.playerId === playerKey || player.health <= 0) return
         
         const dx = bullet.x - player.x
         const dy = bullet.y - player.y
@@ -178,7 +178,7 @@ class GameEngine {
         if (distance < this.PLAYER_SIZE) {
           this.createExplosion(player.x, player.y)
           
-          if (player.id === playerId) {
+          if (playerKey === playerId) {
             this.yjsManager.damagePlayer(playerId, 20)
           }
           
@@ -239,14 +239,14 @@ class GameEngine {
   renderPlayers() {
     const currentPlayerId = this.yjsManager.getClientId()
     
-    Object.values(this.players).forEach(player => {
-      if (player.health <= 0) return
+    Object.entries(this.players).forEach(([playerId, player]) => {
+      if (!player || player.health <= 0) return
       
       this.ctx.save()
       this.ctx.translate(player.x, player.y)
       this.ctx.rotate((player.rotation || 0) * Math.PI / 180)
       
-      if (player.id === currentPlayerId) {
+      if (playerId === currentPlayerId) {
         this.ctx.fillStyle = '#2196F3'
         this.ctx.shadowColor = '#2196F3'
         this.ctx.shadowBlur = 15
@@ -269,7 +269,7 @@ class GameEngine {
       this.ctx.fillStyle = 'white'
       this.ctx.font = '12px Arial'
       this.ctx.fillText(
-        player.id === currentPlayerId ? 'You' : player.id.slice(-4),
+        playerId === currentPlayerId ? 'You' : playerId.slice(-4),
         player.x,
         player.y + this.PLAYER_SIZE + 15
       )

@@ -1,11 +1,13 @@
 import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
+import * as awarenessProtocol from 'y-protocols/awareness'
 
 class YjsManager {
   constructor(wsUrl) {
     this.wsUrl = wsUrl
     this.doc = new Y.Doc()
     this.provider = null
+    this.awareness = null
     this.clientId = null
     
     this.players = this.doc.getMap('players')
@@ -16,13 +18,16 @@ class YjsManager {
     this.onPlayersChangeCallback = null
     this.onBulletsChangeCallback = null
     this.onGameStateChangeCallback = null
+    this.onAwarenessChangeCallback = null
     
     this.connectionStatus = 'disconnected'
+    this.localPlayerState = null
   }
   
   async connect() {
     try {
       this.provider = new WebsocketProvider(this.wsUrl, 'game-room', this.doc)
+      this.awareness = this.provider.awareness
       
       this.provider.on('status', (event) => {
         console.log('WebSocket status:', event.status)
@@ -37,12 +42,18 @@ class YjsManager {
           reject(new Error('Connection timeout'))
         }, 5000)
         
-        this.provider.on('synced', () => {
+        const onSynced = () => {
           clearTimeout(timeout)
-          this.clientId = this.doc.clientID.toString()
+          this.clientId = this.awareness.clientID.toString()
           console.log('Yjs synced, client ID:', this.clientId)
           resolve()
-        })
+        }
+        
+        if (this.provider.synced) {
+          onSynced()
+        } else {
+          this.provider.on('synced', onSynced)
+        }
       })
       
       this.setupListeners()
@@ -55,13 +66,25 @@ class YjsManager {
   }
   
   setupListeners() {
-    this.players.observe((event) => {
-      if (this.onPlayersChangeCallback) {
-        const playersData = {}
-        this.players.forEach((value, key) => {
-          playersData[key] = value
+    this.awareness.on('change', () => {
+      if (this.onAwarenessChangeCallback) {
+        const states = {}
+        this.awareness.getStates().forEach((state, clientId) => {
+          if (state.player) {
+            states[clientId] = state.player
+          }
         })
-        this.onPlayersChangeCallback(playersData)
+        this.onAwarenessChangeCallback(states)
+      }
+      
+      if (this.onPlayersChangeCallback) {
+        const states = {}
+        this.awareness.getStates().forEach((state, clientId) => {
+          if (state.player) {
+            states[clientId] = state.player
+          }
+        })
+        this.onPlayersChangeCallback(states)
       }
     })
     
@@ -80,12 +103,16 @@ class YjsManager {
         this.onGameStateChangeCallback(gameStateData)
       }
     })
+    
+    window.addEventListener('beforeunload', () => {
+      this.disconnect()
+    })
   }
   
   initializePlayer() {
-    if (!this.clientId) return
+    if (!this.clientId || !this.awareness) return
     
-    const playerData = {
+    this.localPlayerState = {
       id: this.clientId,
       x: Math.random() * 800 + 100,
       y: Math.random() * 600 + 100,
@@ -96,7 +123,7 @@ class YjsManager {
       isActive: true
     }
     
-    this.players.set(this.clientId, playerData)
+    this.awareness.setLocalStateField('player', this.localPlayerState)
     
     if (!this.gameState.has('started')) {
       this.gameState.set('started', true)
@@ -105,16 +132,15 @@ class YjsManager {
   }
   
   updatePlayer(playerData) {
-    if (!this.clientId) return
+    if (!this.clientId || !this.awareness) return
     
-    const currentPlayer = this.players.get(this.clientId) || {}
-    const updatedPlayer = {
-      ...currentPlayer,
+    this.localPlayerState = {
+      ...this.localPlayerState,
       ...playerData,
       lastUpdate: Date.now()
     }
     
-    this.players.set(this.clientId, updatedPlayer)
+    this.awareness.setLocalStateField('player', this.localPlayerState)
   }
   
   addBullet(bulletData) {
@@ -152,12 +178,12 @@ class YjsManager {
   }
   
   damagePlayer(playerId, damage) {
-    const player = this.players.get(playerId)
-    if (player) {
-      const newHealth = Math.max(0, player.health - damage)
-      this.players.set(playerId, { ...player, health: newHealth })
+    if (playerId === this.clientId && this.localPlayerState) {
+      const newHealth = Math.max(0, this.localPlayerState.health - damage)
+      this.localPlayerState.health = newHealth
+      this.awareness.setLocalStateField('player', this.localPlayerState)
       
-      if (playerId === this.clientId && newHealth <= 0) {
+      if (newHealth <= 0) {
         setTimeout(() => {
           this.respawnPlayer()
         }, 2000)
@@ -166,37 +192,35 @@ class YjsManager {
   }
   
   respawnPlayer() {
-    if (!this.clientId) return
+    if (!this.clientId || !this.localPlayerState) return
     
-    const player = this.players.get(this.clientId)
-    if (player) {
-      this.players.set(this.clientId, {
-        ...player,
-        x: Math.random() * 800 + 100,
-        y: Math.random() * 600 + 100,
-        health: 100,
-        lastUpdate: Date.now()
-      })
+    this.localPlayerState = {
+      ...this.localPlayerState,
+      x: Math.random() * 800 + 100,
+      y: Math.random() * 600 + 100,
+      health: 100,
+      lastUpdate: Date.now()
     }
+    
+    this.awareness.setLocalStateField('player', this.localPlayerState)
   }
   
   addScore(points) {
-    if (!this.clientId) return
+    if (!this.clientId || !this.localPlayerState) return
     
-    const player = this.players.get(this.clientId)
-    if (player) {
-      this.players.set(this.clientId, {
-        ...player,
-        score: (player.score || 0) + points
-      })
-    }
+    this.localPlayerState.score = (this.localPlayerState.score || 0) + points
+    this.awareness.setLocalStateField('player', this.localPlayerState)
   }
   
   getAllPlayers() {
     const playersData = {}
-    this.players.forEach((value, key) => {
-      playersData[key] = value
-    })
+    if (this.awareness) {
+      this.awareness.getStates().forEach((state, clientId) => {
+        if (state.player) {
+          playersData[clientId] = state.player
+        }
+      })
+    }
     return playersData
   }
   
@@ -224,6 +248,15 @@ class YjsManager {
     this.onPlayersChangeCallback = callback
   }
   
+  onAwarenessChange(callback) {
+    this.onAwarenessChangeCallback = callback
+  }
+  
+  getOnlinePlayerCount() {
+    if (!this.awareness) return 0
+    return Array.from(this.awareness.getStates().values()).filter(state => state.player).length
+  }
+  
   onBulletsChange(callback) {
     this.onBulletsChangeCallback = callback
   }
@@ -233,11 +266,9 @@ class YjsManager {
   }
   
   disconnect() {
-    if (this.clientId) {
-      const player = this.players.get(this.clientId)
-      if (player) {
-        this.players.set(this.clientId, { ...player, isActive: false })
-      }
+    if (this.awareness && this.localPlayerState) {
+      this.localPlayerState.isActive = false
+      this.awareness.setLocalStateField('player', this.localPlayerState)
     }
     
     if (this.provider) {
@@ -246,18 +277,6 @@ class YjsManager {
   }
   
   cleanupOfflinePlayers() {
-    const now = Date.now()
-    const playersToRemove = []
-    
-    this.players.forEach((player, playerId) => {
-      if (!player.isActive || (now - player.lastUpdate > 10000)) {
-        playersToRemove.push(playerId)
-      }
-    })
-    
-    playersToRemove.forEach(playerId => {
-      this.players.delete(playerId)
-    })
   }
 }
 

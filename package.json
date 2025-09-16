@@ -10,13 +10,12 @@
   },
   "dependencies": {
     "vue": "^3.3.4",
-    "yjs": "^13.6.8",
+    "y-protocols": "^1.0.6",
     "y-websocket": "^3.0.0",
-    "y-protocols": "^1.0.6"
+    "yjs": "^13.6.8"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^4.3.4",
+    "@vitejs/plugin-vue": "^6.0.1",
     "vite": "^7.1.5"
   }
 }
-
