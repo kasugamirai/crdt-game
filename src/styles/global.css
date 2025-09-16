@@ -1,0 +1,184 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: linear-gradient(135deg, #0c1445 0%, #1a237e 50%, #3949ab 100%);
+  font-family: 'Arial', sans-serif;
+  overflow: hidden;
+  height: 100vh;
+}
+
+#app {
+  height: 100vh;
+  width: 100vw;
+}
+
+.game-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: 
+    radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%),
+    radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%),
+    linear-gradient(135deg, #0c1445 0%, #1a237e 100%);
+}
+
+.game-canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ui-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.ui-overlay > * {
+  pointer-events: auto;
+}
+
+.game-info {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: white;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 15px;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.player-list {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  color: white;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 15px;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 200px;
+}
+
+.controls {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: white;
+  background: rgba(0, 0, 0, 0.7);
+  padding: 15px;
+  border-radius: 10px;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  text-align: center;
+}
+
+.connection-status {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  border-radius: 25px;
+  font-weight: bold;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.connection-status.connected {
+  background: rgba(76, 175, 80, 0.8);
+  color: white;
+}
+
+.connection-status.connecting {
+  background: rgba(255, 193, 7, 0.8);
+  color: black;
+}
+
+.connection-status.disconnected {
+  background: rgba(244, 67, 54, 0.8);
+  color: white;
+}
+
+.plane {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  background: #4CAF50;
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+  transition: all 0.1s ease-out;
+  z-index: 10;
+}
+
+.plane.enemy {
+  background: #f44336;
+}
+
+.plane.self {
+  background: #2196F3;
+  box-shadow: 0 0 15px rgba(33, 150, 243, 0.6);
+}
+
+.bullet {
+  position: absolute;
+  width: 4px;
+  height: 12px;
+  background: #FFD700;
+  border-radius: 2px;
+  box-shadow: 0 0 8px rgba(255, 215, 0, 0.8);
+  z-index: 5;
+}
+
+.explosion {
+  position: absolute;
+  width: 60px;
+  height: 60px;
+  background: radial-gradient(circle, #ff6b35 0%, #f7931e 30%, transparent 70%);
+  border-radius: 50%;
+  animation: explode 0.5s ease-out forwards;
+  z-index: 15;
+}
+
+@keyframes explode {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-info,
+  .player-list {
+    font-size: 14px;
+    padding: 10px;
+  }
+  
+  .controls {
+    font-size: 12px;
+    padding: 10px;
+  }
+}
+
