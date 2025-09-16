@@ -18,7 +18,9 @@
         <p>Player ID: {{ playerId }}</p>
         <p>Health: {{ playerHealth }}/100</p>
         <p>Score: {{ playerScore }}</p>
-        <p>Online Players: {{ onlinePlayerCount }}</p>
+        <p>Online Players: {{ onlinePlayerCount }} 
+          <button @click="refreshPlayerCount" style="margin-left: 10px; padding: 2px 6px; font-size: 10px;">Refresh</button>
+        </p>
       </div>
       
       <div class="player-list">
@@ -61,6 +63,7 @@ export default {
     let yjsManager = null
     let gameEngine = null
     let animationFrame = null
+    let updateInterval = null
     
     const keys = reactive({
       w: false, a: false, s: false, d: false,
@@ -81,19 +84,24 @@ export default {
         })
         
         yjsManager.onPlayersChange((newPlayers) => {
+          console.log('Players changed:', newPlayers)
+          
           Object.keys(players).forEach(key => {
             if (!(key in newPlayers)) {
               delete players[key]
             }
           })
+          
           Object.assign(players, newPlayers)
           
           onlinePlayerCount.value = yjsManager.getOnlinePlayerCount()
+          console.log('Online count updated to:', onlinePlayerCount.value)
           
           const currentPlayer = players[playerId.value]
           if (currentPlayer) {
             playerHealth.value = currentPlayer.health || 100
             playerScore.value = currentPlayer.score || 0
+            console.log('Player stats updated - Health:', playerHealth.value, 'Score:', playerScore.value)
           }
         })
         
@@ -103,6 +111,19 @@ export default {
           gameEngine.start()
           
           gameLoop()
+          
+          updateInterval = setInterval(() => {
+            const newCount = yjsManager.getOnlinePlayerCount()
+            if (newCount !== onlinePlayerCount.value) {
+              onlinePlayerCount.value = newCount
+              console.log('Periodic update - Online count:', newCount)
+            }
+          }, 1000)
+          
+          setTimeout(() => {
+            onlinePlayerCount.value = yjsManager.getOnlinePlayerCount()
+            console.log('Initial online count:', onlinePlayerCount.value)
+          }, 500)
         }
         
       } catch (error) {
@@ -161,6 +182,17 @@ export default {
       }
     }
     
+    const refreshPlayerCount = () => {
+      if (yjsManager) {
+        const newCount = yjsManager.getOnlinePlayerCount()
+        onlinePlayerCount.value = newCount
+        console.log('Manual refresh - Online count:', newCount)
+        
+        const allPlayers = yjsManager.getAllPlayers()
+        console.log('All current players:', allPlayers)
+      }
+    }
+    
     onMounted(() => {
       initGame()
       
@@ -177,6 +209,9 @@ export default {
     onUnmounted(() => {
       if (animationFrame) {
         cancelAnimationFrame(animationFrame)
+      }
+      if (updateInterval) {
+        clearInterval(updateInterval)
       }
       if (gameEngine) {
         gameEngine.destroy()
@@ -199,7 +234,8 @@ export default {
       onlinePlayerCount,
       handleKeyDown,
       handleKeyUp,
-      getConnectionText
+      getConnectionText,
+      refreshPlayerCount
     }
   }
 }

@@ -180,10 +180,12 @@ class GameEngine {
           
           if (playerKey === playerId) {
             this.yjsManager.damagePlayer(playerId, 20)
+            console.log('Player damaged, health reduced by 20')
           }
           
           if (bullet.playerId === playerId) {
             this.yjsManager.addScore(10)
+            console.log('Player scored 10 points')
           }
           
           this.yjsManager.removeBullet(bullet.id)
