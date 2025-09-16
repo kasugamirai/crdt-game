@@ -49,7 +49,9 @@ npm install
 ```
 
 ### 2. Start Backend Server
-
+```
+https://github.com/reearth/reearth-flow/tree/main/server/websocket
+```
 Make sure your Rust backend server is running on `localhost:8000`:
 
 ```bash
