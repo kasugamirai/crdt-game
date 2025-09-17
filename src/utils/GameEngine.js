@@ -1,8 +1,8 @@
 class GameEngine {
-  constructor(canvas, yjsManager) {
+  constructor(canvas, nostrManager) {
     this.canvas = canvas
     this.ctx = canvas.getContext('2d')
-    this.yjsManager = yjsManager
+    this.nostrManager = nostrManager
     
     this.isRunning = false
     this.lastTime = 0
@@ -43,11 +43,11 @@ class GameEngine {
   }
   
   setupEventListeners() {
-    this.yjsManager.onPlayersChange((players) => {
+    this.nostrManager.onPlayersChange((players) => {
       this.players = players
     })
     
-    this.yjsManager.onBulletsChange((bullets) => {
+    this.nostrManager.onBulletsChange((bullets) => {
       this.bullets = bullets
     })
   }
@@ -76,7 +76,7 @@ class GameEngine {
   }
   
   updateCurrentPlayer(input, deltaTime) {
-    const playerId = this.yjsManager.getClientId()
+    const playerId = this.nostrManager.getClientId()
     if (!playerId) return
     
     const player = this.players[playerId]
@@ -105,7 +105,7 @@ class GameEngine {
     }
     
     if (newX !== player.x || newY !== player.y || newRotation !== player.rotation) {
-      this.yjsManager.updatePlayer({
+      this.nostrManager.updatePlayer({
         x: newX,
         y: newY,
         rotation: newRotation
@@ -129,7 +129,7 @@ class GameEngine {
       vy = 0
     }
     
-    this.yjsManager.addBullet({
+    this.nostrManager.addBullet({
       x: x,
       y: y - this.PLAYER_SIZE,
       vx: vx,
@@ -148,7 +148,7 @@ class GameEngine {
                      bullet.y >= 0 && bullet.y <= this.height
       
       if (!inBounds) {
-        this.yjsManager.removeBullet(bullet.id)
+        this.nostrManager.removeBullet(bullet.id)
       }
       
       return inBounds
@@ -165,7 +165,7 @@ class GameEngine {
   }
   
   checkCollisions() {
-    const playerId = this.yjsManager.getClientId()
+    const playerId = this.nostrManager.getClientId()
     
     this.bullets.forEach(bullet => {
       Object.entries(this.players).forEach(([playerKey, player]) => {
@@ -179,16 +179,16 @@ class GameEngine {
           this.createExplosion(player.x, player.y)
           
           if (playerKey === playerId) {
-            this.yjsManager.damagePlayer(playerId, 20)
+            this.nostrManager.damagePlayer(playerId, 20)
             console.log('Player damaged, health reduced by 20')
           }
           
           if (bullet.playerId === playerId) {
-            this.yjsManager.addScore(10)
+            this.nostrManager.addScore(10)
             console.log('Player scored 10 points')
           }
           
-          this.yjsManager.removeBullet(bullet.id)
+          this.nostrManager.removeBullet(bullet.id)
         }
       })
     })
@@ -206,8 +206,8 @@ class GameEngine {
   
   cleanup() {
     if (Math.random() < 0.01) {
-      this.yjsManager.cleanupBullets()
-      this.yjsManager.cleanupOfflinePlayers()
+      this.nostrManager.cleanupBullets()
+      this.nostrManager.cleanupOfflinePlayers()
     }
   }
   
@@ -239,7 +239,7 @@ class GameEngine {
   }
   
   renderPlayers() {
-    const currentPlayerId = this.yjsManager.getClientId()
+    const currentPlayerId = this.nostrManager.getClientId()
     
     Object.entries(this.players).forEach(([playerId, player]) => {
       if (!player || player.health <= 0) return

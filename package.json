@@ -1,7 +1,7 @@
 {
   "name": "multiplayer-plane-battle",
   "version": "1.0.0",
-  "description": "A multiplayer plane battle game using Yjs and Vue",
+  "description": "A multiplayer plane battle game using Nostr protocol and Vue",
   "main": "index.js",
   "scripts": {
     "dev": "vite",
@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "nostr-tools": "^2.16.2",
     "vue": "^3.3.4",
     "y-protocols": "^1.0.6",
     "y-websocket": "^3.0.0",

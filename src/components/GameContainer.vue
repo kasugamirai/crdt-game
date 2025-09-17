@@ -45,9 +45,8 @@
 
 <script>
 import { ref, reactive, onMounted, onUnmounted, nextTick } from 'vue'
-import YjsManager from '../utils/YjsManager.js'
+import NostrManager from '../utils/NostrManager.js'
 import GameEngine from '../utils/GameEngine.js'
-import { config } from '../../env.js'
 
 export default {
   name: 'GameContainer',
@@ -60,7 +59,7 @@ export default {
     const players = reactive({})
     const onlinePlayerCount = ref(0)
     
-    let yjsManager = null
+    let nostrManager = null
     let gameEngine = null
     let animationFrame = null
     let updateInterval = null
@@ -73,17 +72,17 @@ export default {
     
     const initGame = async () => {
       try {
-        yjsManager = new YjsManager(config.WS_URL)
-        await yjsManager.connect()
+        nostrManager = new NostrManager()
+        await nostrManager.connect()
         
-        playerId.value = yjsManager.getClientId()
+        playerId.value = nostrManager.getClientId()
         connectionStatus.value = 'connected'
         
-        yjsManager.onConnectionChange((status) => {
+        nostrManager.onConnectionChange((status) => {
           connectionStatus.value = status
         })
         
-        yjsManager.onPlayersChange((newPlayers) => {
+        nostrManager.onPlayersChange((newPlayers) => {
           console.log('Players changed:', newPlayers)
           
           Object.keys(players).forEach(key => {
@@ -94,7 +93,7 @@ export default {
           
           Object.assign(players, newPlayers)
           
-          onlinePlayerCount.value = yjsManager.getOnlinePlayerCount()
+          onlinePlayerCount.value = nostrManager.getOnlinePlayerCount()
           console.log('Online count updated to:', onlinePlayerCount.value)
           
           const currentPlayer = players[playerId.value]
@@ -107,13 +106,13 @@ export default {
         
         await nextTick()
         if (gameCanvas.value) {
-          gameEngine = new GameEngine(gameCanvas.value, yjsManager)
+          gameEngine = new GameEngine(gameCanvas.value, nostrManager)
           gameEngine.start()
           
           gameLoop()
           
           updateInterval = setInterval(() => {
-            const newCount = yjsManager.getOnlinePlayerCount()
+            const newCount = nostrManager.getOnlinePlayerCount()
             if (newCount !== onlinePlayerCount.value) {
               onlinePlayerCount.value = newCount
               console.log('Periodic update - Online count:', newCount)
@@ -121,7 +120,7 @@ export default {
           }, 1000)
           
           setTimeout(() => {
-            onlinePlayerCount.value = yjsManager.getOnlinePlayerCount()
+            onlinePlayerCount.value = nostrManager.getOnlinePlayerCount()
             console.log('Initial online count:', onlinePlayerCount.value)
           }, 500)
         }
@@ -183,12 +182,12 @@ export default {
     }
     
     const refreshPlayerCount = () => {
-      if (yjsManager) {
-        const newCount = yjsManager.getOnlinePlayerCount()
+      if (nostrManager) {
+        const newCount = nostrManager.getOnlinePlayerCount()
         onlinePlayerCount.value = newCount
         console.log('Manual refresh - Online count:', newCount)
         
-        const allPlayers = yjsManager.getAllPlayers()
+        const allPlayers = nostrManager.getAllPlayers()
         console.log('All current players:', allPlayers)
       }
     }
@@ -216,8 +215,8 @@ export default {
       if (gameEngine) {
         gameEngine.destroy()
       }
-      if (yjsManager) {
-        yjsManager.disconnect()
+      if (nostrManager) {
+        nostrManager.disconnect()
       }
       
       document.removeEventListener('keydown', handleKeyDown)
